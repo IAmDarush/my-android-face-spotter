@@ -80,9 +80,41 @@ class FaceGraphic extends GraphicOverlay.Graphic {
         mEyelidPaint.setStyle(Paint.Style.FILL);
     }
 
+    // 1
+    void update(Face face) {
+        mFace = face;
+        postInvalidate(); // Trigger a redraw of the graphic (i.e. cause draw() to be called).
+    }
+
     @Override
     public void draw(Canvas canvas) {
+        // 2
+        // Confirm that the face and its features are still visible
+        // before drawing any graphics over it.
+        Face face = mFace;
+        if (face == null) {
+            return;
+        }
 
+        // 3
+        float centerX = translateX(face.getPosition().x + face.getWidth() / 2.0f);
+        float centerY = translateY(face.getPosition().y + face.getHeight() / 2.0f);
+        float offsetX = scaleX(face.getWidth() / 2.0f);
+        float offsetY = scaleY(face.getHeight() / 2.0f);
+
+        // 4
+        // Draw a box around the face.
+        float left = centerX - offsetX;
+        float right = centerX + offsetX;
+        float top = centerY - offsetY;
+        float bottom = centerY + offsetY;
+
+        // 5
+        canvas.drawRect(left, top, right, bottom, mHintOutlinePaint);
+
+        // 6
+        // Draw the face's id.
+        canvas.drawText(String.format("id: %d", face.getId()), centerX, centerY, mHintTextPaint);
     }
 
 }
