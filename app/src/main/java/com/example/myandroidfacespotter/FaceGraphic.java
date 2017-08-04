@@ -92,12 +92,12 @@ class FaceGraphic extends GraphicOverlay.Graphic {
         final float DOT_RADIUS = 3.0f;
         final float TEXT_OFFSET_Y = -30.0f;
 
-        // Confirm that the face and its features are still visible before drawing any graphics over it.
+        // Confirm that the face and its features are still visible
+        // before drawing any graphics over it.
         if (mFaceData == null) {
             return;
         }
 
-        // 1
         PointF detectPosition = mFaceData.getPosition();
         PointF detectLeftEyePosition = mFaceData.getLeftEyePosition();
         PointF detectRightEyePosition = mFaceData.getRightEyePosition();
@@ -105,6 +105,7 @@ class FaceGraphic extends GraphicOverlay.Graphic {
         PointF detectMouthLeftPosition = mFaceData.getMouthLeftPosition();
         PointF detectMouthBottomPosition = mFaceData.getMouthBottomPosition();
         PointF detectMouthRightPosition = mFaceData.getMouthRightPosition();
+
         if ((detectPosition == null) ||
                 (detectLeftEyePosition == null) ||
                 (detectRightEyePosition == null) ||
@@ -115,36 +116,113 @@ class FaceGraphic extends GraphicOverlay.Graphic {
             return;
         }
 
-        // 2
-        float leftEyeX = translateX(detectLeftEyePosition.x);
-        float leftEyeY = translateY(detectLeftEyePosition.y);
-        canvas.drawCircle(leftEyeX, leftEyeY, DOT_RADIUS, mHintOutlinePaint);
-        canvas.drawText("left eye", leftEyeX, leftEyeY + TEXT_OFFSET_Y, mHintTextPaint);
+        // Face position and dimensions
+        PointF position = new PointF(translateX(detectPosition.x),
+                translateY(detectPosition.y));
+        float width = scaleX(mFaceData.getWidth());
+        float height = scaleY(mFaceData.getHeight());
 
-        float rightEyeX = translateX(detectRightEyePosition.x);
-        float rightEyeY = translateY(detectRightEyePosition.y);
-        canvas.drawCircle(rightEyeX, rightEyeY, DOT_RADIUS, mHintOutlinePaint);
-        canvas.drawText("right eye", rightEyeX, rightEyeY + TEXT_OFFSET_Y, mHintTextPaint);
+        // Eye coordinates
+        PointF leftEyePosition = new PointF(translateX(detectLeftEyePosition.x),
+                translateY(detectLeftEyePosition.y));
+        PointF rightEyePosition = new PointF(translateX(detectRightEyePosition.x),
+                translateY(detectRightEyePosition.y));
 
-        float noseBaseX = translateX(detectNoseBasePosition.x);
-        float noseBaseY = translateY(detectNoseBasePosition.y);
-        canvas.drawCircle(noseBaseX, noseBaseY, DOT_RADIUS, mHintOutlinePaint);
-        canvas.drawText("nose base", noseBaseX, noseBaseY + TEXT_OFFSET_Y, mHintTextPaint);
+        // Eye state
+        boolean leftEyeOpen = mFaceData.isLeftEyeOpen();
+        boolean rightEyeOpen = mFaceData.isRightEyeOpen();
 
-        float mouthLeftX = translateX(detectMouthLeftPosition.x);
-        float mouthLeftY = translateY(detectMouthLeftPosition.y);
-        canvas.drawCircle(mouthLeftX, mouthLeftY, DOT_RADIUS, mHintOutlinePaint);
-        canvas.drawText("mouth left", mouthLeftX, mouthLeftY + TEXT_OFFSET_Y, mHintTextPaint);
+        // Nose coordinates
+        PointF noseBasePosition = new PointF(translateX(detectNoseBasePosition.x),
+                translateY(detectNoseBasePosition.y));
 
-        float mouthRightX = translateX(detectMouthRightPosition.x);
-        float mouthRightY = translateY(detectMouthRightPosition.y);
-        canvas.drawCircle(mouthRightX, mouthRightY, DOT_RADIUS, mHintOutlinePaint);
-        canvas.drawText("mouth right", mouthRightX, mouthRightY + TEXT_OFFSET_Y, mHintTextPaint);
+        // Mouth coordinates
+        PointF mouthLeftPosition = new PointF(translateX(detectMouthLeftPosition.x),
+                translateY(detectMouthLeftPosition.y));
+        PointF mouthRightPosition = new PointF(translateX(detectMouthRightPosition.x),
+                translateY(detectMouthRightPosition.y));
+        PointF mouthBottomPosition = new PointF(translateX(detectMouthBottomPosition.x),
+                translateY(detectMouthBottomPosition.y));
 
-        float mouthBottomX = translateX(detectMouthBottomPosition.x);
-        float mouthBottomY = translateY(detectMouthBottomPosition.y);
-        canvas.drawCircle(mouthBottomX, mouthBottomY, DOT_RADIUS, mHintOutlinePaint);
-        canvas.drawText("mouth bottom", mouthBottomX, mouthBottomY + TEXT_OFFSET_Y, mHintTextPaint);
+        // Smile state
+        boolean smiling = mFaceData.isSmiling();
+
+        // Calculate the distance between the eyes using Pythagoras' formula,
+        // and we'll use that distance to set the size of the eyes and irises.
+        final float EYE_RADIUS_PROPORTION = 0.45f;
+        final float IRIS_RADIUS_PROPORTION = EYE_RADIUS_PROPORTION / 2.0f;
+        float distance = (float) Math.sqrt(
+                (rightEyePosition.x - leftEyePosition.x) * (rightEyePosition.x - leftEyePosition.x) +
+                        (rightEyePosition.y - leftEyePosition.y) * (rightEyePosition.y - leftEyePosition.y));
+        float eyeRadius = EYE_RADIUS_PROPORTION * distance;
+        float irisRadius = IRIS_RADIUS_PROPORTION * distance;
+
+        // Draw the eyes.
+        drawEye(canvas, leftEyePosition, eyeRadius, leftEyePosition, irisRadius, leftEyeOpen, smiling);
+        drawEye(canvas, rightEyePosition, eyeRadius, rightEyePosition, irisRadius, rightEyeOpen, smiling);
+
+        // Draw the nose.
+        drawNose(canvas, noseBasePosition, leftEyePosition, rightEyePosition, width);
+
+        // Draw the mustache.
+        drawMustache(canvas, noseBasePosition, mouthLeftPosition, mouthRightPosition);
+    }
+
+    private void drawEye(Canvas canvas,
+                         PointF eyePosition, float eyeRadius,
+                         PointF irisPosition, float irisRadius,
+                         boolean eyeOpen, boolean smiling) {
+        if (eyeOpen) {
+            canvas.drawCircle(eyePosition.x, eyePosition.y, eyeRadius, mEyeWhitePaint);
+            if (smiling) {
+                mHappyStarGraphic.setBounds(
+                        (int) (irisPosition.x - irisRadius),
+                        (int) (irisPosition.y - irisRadius),
+                        (int) (irisPosition.x + irisRadius),
+                        (int) (irisPosition.y + irisRadius));
+                mHappyStarGraphic.draw(canvas);
+            } else {
+                canvas.drawCircle(irisPosition.x, irisPosition.y, irisRadius, mIrisPaint);
+            }
+        } else {
+            canvas.drawCircle(eyePosition.x, eyePosition.y, eyeRadius, mEyelidPaint);
+            float y = eyePosition.y;
+            float start = eyePosition.x - eyeRadius;
+            float end = eyePosition.x + eyeRadius;
+            canvas.drawLine(start, y, end, y, mEyeOutlinePaint);
+        }
+        canvas.drawCircle(eyePosition.x, eyePosition.y, eyeRadius, mEyeOutlinePaint);
+    }
+
+    private void drawNose(Canvas canvas,
+                          PointF noseBasePosition,
+                          PointF leftEyePosition, PointF rightEyePosition,
+                          float faceWidth) {
+        final float NOSE_FACE_WIDTH_RATIO = (float) (1 / 5.0);
+        float noseWidth = faceWidth * NOSE_FACE_WIDTH_RATIO;
+        int left = (int) (noseBasePosition.x - (noseWidth / 2));
+        int right = (int) (noseBasePosition.x + (noseWidth / 2));
+        int top = (int) (leftEyePosition.y + rightEyePosition.y) / 2;
+        int bottom = (int) noseBasePosition.y;
+
+        mPigNoseGraphic.setBounds(left, top, right, bottom);
+        mPigNoseGraphic.draw(canvas);
+    }
+
+    private void drawMustache(Canvas canvas,
+                              PointF noseBasePosition,
+                              PointF mouthLeftPosition, PointF mouthRightPosition) {
+        int left = (int) mouthLeftPosition.x;
+        int top = (int) noseBasePosition.y;
+        int right = (int) mouthRightPosition.x;
+        int bottom = (int) Math.min(mouthLeftPosition.y, mouthRightPosition.y);
+
+        if (mIsFrontFacing) {
+            mMustacheGraphic.setBounds(left, top, right, bottom);
+        } else {
+            mMustacheGraphic.setBounds(right, top, left, bottom);
+        }
+        mMustacheGraphic.draw(canvas);
     }
 
 }

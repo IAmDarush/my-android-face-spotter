@@ -196,7 +196,7 @@ public final class FaceActivity extends AppCompatActivity {
         // 3
         mCameraSource = new CameraSource.Builder(context, detector)
                 .setFacing(facing)
-                .setRequestedPreviewSize(320, 240)
+                .setRequestedPreviewSize(640, 480)
                 .setRequestedFps(60.0f)
                 .setAutoFocusEnabled(true)
                 .build();
