@@ -166,6 +166,17 @@ class FaceGraphic extends GraphicOverlay.Graphic {
 
         // Draw the mustache.
         drawMustache(canvas, noseBasePosition, mouthLeftPosition, mouthRightPosition);
+
+        // Head tilt
+        float eulerY = mFaceData.getEulerY();
+        float eulerZ = mFaceData.getEulerZ();
+
+        // Draw the hat only if the subject's head is titled at a sufficiently jaunty angle.
+        final float HEAD_TILT_HAT_THRESHOLD = 20.0f;
+        if (Math.abs(eulerZ) > HEAD_TILT_HAT_THRESHOLD) {
+            drawHat(canvas, position, width, height, noseBasePosition);
+        }
+
     }
 
     private void drawEye(Canvas canvas,
@@ -223,6 +234,23 @@ class FaceGraphic extends GraphicOverlay.Graphic {
             mMustacheGraphic.setBounds(right, top, left, bottom);
         }
         mMustacheGraphic.draw(canvas);
+    }
+
+    private void drawHat(Canvas canvas, PointF facePosition, float faceWidth, float faceHeight, PointF noseBasePosition) {
+        final float HAT_FACE_WIDTH_RATIO = (float)(1.0 / 4.0);
+        final float HAT_FACE_HEIGHT_RATIO = (float)(1.0 / 6.0);
+        final float HAT_CENTER_Y_OFFSET_FACTOR = (float)(1.0 / 8.0);
+
+        float hatCenterY = facePosition.y + (faceHeight * HAT_CENTER_Y_OFFSET_FACTOR);
+        float hatWidth = faceWidth * HAT_FACE_WIDTH_RATIO;
+        float hatHeight = faceHeight * HAT_FACE_HEIGHT_RATIO;
+
+        int left = (int)(noseBasePosition.x - (hatWidth / 2));
+        int right = (int)(noseBasePosition.x + (hatWidth / 2));
+        int top = (int)(hatCenterY - (hatHeight / 2));
+        int bottom = (int)(hatCenterY + (hatHeight / 2));
+        mHatGraphic.setBounds(left, top, right, bottom);
+        mHatGraphic.draw(canvas);
     }
 
 }

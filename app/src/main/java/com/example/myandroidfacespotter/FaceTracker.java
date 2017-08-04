@@ -83,6 +83,10 @@ class FaceTracker extends Tracker<Face> {
         mOverlay.add(mFaceGraphic);
         updatePreviousLandmarkPositions(face);
 
+        // Get head angles.
+        mFaceData.setEulerY(face.getEulerY());
+        mFaceData.setEulerZ(face.getEulerZ());
+
         // Get face dimensions.
         mFaceData.setPosition(face.getPosition());
         mFaceData.setWidth(face.getWidth());
